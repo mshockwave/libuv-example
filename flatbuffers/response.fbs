@@ -1,0 +1,15 @@
+include "types.fbs";
+
+namespace fbs.hw1;
+
+enum Status:byte {
+    OK = 0,
+    ERROR = 1
+}
+
+table Response {
+    status_code:Status;
+    extra_content:Payload;
+}
+
+root_type Response;

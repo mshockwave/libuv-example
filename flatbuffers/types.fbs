@@ -1,0 +1,13 @@
+namespace fbs.hw1;
+
+table StringPayload {
+    content:string;
+}
+table BinaryPayload {
+    content:[byte];
+}
+
+union Payload {
+    StringPayload,
+    BinaryPayload
+}

@@ -1,0 +1,18 @@
+include "types.fbs";
+
+namespace fbs.hw1;
+
+enum Cmd:byte {
+    CD = 0,
+    LS = 1,
+    PUT = 2,
+    GET = 3,
+    QUIT = 4
+}
+
+table Request {
+    command:Cmd;
+    payload:Payload;
+}
+
+root_type Request;
