@@ -18,7 +18,7 @@ set(COMMON_SOURCE_FILE
 
 set(CLIENT_SOURCE_FILE
         ${COMMON_SOURCE_FILE}
-        ClientMain.cpp)
+        client/Main.cpp)
 
 set(SERVER_SOURCE_FILE
         ${COMMON_SOURCE_FILE}

@@ -13,7 +13,7 @@ static void OnShutdown(uv_shutdown_t* req, int status);
 static void OnClientClose(uv_handle_t* handle);
 
 static void OnClientConnection(uv_stream_t *stream, int status){
-    if(status == 0){
+    if(status >= 0){
         //Get client info
         uv_tcp_t* tcp_handle = reinterpret_cast<uv_tcp_t*>(stream);
         socket_addr_t sa;

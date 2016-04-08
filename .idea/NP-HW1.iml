@@ -4,13 +4,13 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/Common.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Common.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/ClientMain.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/server/Context.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/server/Handlers.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/server/Main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/server/Context.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/server/Handlers.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/client/Main.cpp" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
