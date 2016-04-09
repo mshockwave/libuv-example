@@ -17,6 +17,8 @@ extern "C"{
 #include "flatbuffers/request_generated.h"
 #include "flatbuffers/response_generated.h"
 
+#define TRANS_BUF_SIZE 2048
+
 typedef struct sockaddr socket_addr_t;
 
 #define SOCK_ADDR_IN(sa_ptr) \
@@ -80,5 +82,11 @@ public:
 
 //flatbuffers related
 namespace msg = fbs::hw1;
+
+#define CAST_2_STRING_PAYLOAD(P) \
+    static_cast<const msg::StringPayload*>(P)
+
+#define STRING_PAYLOAD_2_STR(P) \
+    (P)->content()->data()
 
 #endif //NP_HW1_UTILS_H

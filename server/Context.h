@@ -20,7 +20,7 @@ public:
     Context() : pwd("Upload") {}
 
     bool set_current_dir(const char* path){
-        if(access(path, F_OK) && access(path, X_OK) && access(path, R_OK)){
+        if(!access(path, F_OK) && !access(path, X_OK) && !access(path, R_OK)){
             pwd = path;
             return true;
         }else{

@@ -1,5 +1,8 @@
 #include <cstdio>
 #include <Common.h>
+#include <iostream>
+
+#include "CmdHandlers.h"
 
 static const char* gMenu[] = {
         "\tcd <remote dir>:  Change Remote Download Folder",
@@ -49,15 +52,15 @@ int main(int argc, char **argv){
         return 1;
     }
 
+    handlers::InitCmdHandlers();
+
     //Console part
-    char input_buffer[200] = {'\0'};
     std::string input_str;
     do{
-        if(strlen(input_buffer) > 0){
-            input_str = input_buffer;
+        if(input_str.length() > 0){
 
             if(input_str.find("cd ") == 0){
-
+                handlers::HandleCD(socketFd, input_str.substr(3).c_str());
             }else if(input_str.find("ls ") == 0){
 
             }else if(input_str.find("put ") == 0){
@@ -72,7 +75,7 @@ int main(int argc, char **argv){
             }
         }
         print_menu();
-    }while(scanf("%s", input_buffer) != EOF);
+    }while(!std::getline(std::cin, input_str).eof());
 
     return 0;
 }

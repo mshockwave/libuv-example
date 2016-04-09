@@ -28,7 +28,7 @@ static void OnClientConnection(uv_stream_t *stream, int status){
         uv_tcp_t* client = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
         uv_tcp_init(stream->loop, client);
 
-        stream->data = new Context();
+        client->data = new Context();
 
         if(uv_accept(stream, reinterpret_cast<uv_stream_t*>(client)) >= 0){
             //Success

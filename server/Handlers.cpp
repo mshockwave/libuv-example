@@ -16,29 +16,33 @@ namespace handlers {
             auto request = msg::GetRequest(buf->base);
 
             flatbuffers::FlatBufferBuilder builder;
-            msg::ResponseBuilder resp_builder(builder);
+            flatbuffers::Offset<msg::Response> resp;
 
             if(request->payload_type() == msg::Payload_StringPayload){
-                auto raw_payload = static_cast<const msg::StringPayload*>(request->payload());
+                auto raw_payload = CAST_2_STRING_PAYLOAD(request->payload());
                 auto path = raw_payload->content();
 
                 const char* pathStr = path->data();
                 if(Context::GetContext(stream)->set_current_dir(pathStr)){
-                    resp_builder.add_status_code(msg::Status_OK);
+                    resp = msg::CreateResponse(builder, msg::Status_OK);
                 }else{
                     //Path Error
-                    resp_builder.add_status_code(msg::Status_ERROR);
                     auto str = builder.CreateString("Invalid Path");
-                    resp_builder.add_extra_content(msg::CreateStringPayload(builder, str).Union());
+                    resp = msg::CreateResponse(builder,
+                                               msg::Status_ERROR,
+                                               msg::Payload_StringPayload,
+                                               msg::CreateStringPayload(builder, str).Union());
                 }
             }else{
                 //Payload Format Error
-                resp_builder.add_status_code(msg::Status_ERROR);
                 auto str = builder.CreateString("Invalid payload format");
-                resp_builder.add_extra_content(msg::CreateStringPayload(builder, str).Union());
+                resp = msg::CreateResponse(builder,
+                                           msg::Status_ERROR,
+                                           msg::Payload_StringPayload,
+                                           msg::CreateStringPayload(builder, str).Union());
             }
 
-            msg::FinishResponseBuffer(builder, resp_builder.Finish());
+            msg::FinishResponseBuffer(builder, resp);
 
             auto write_req = WriteRequest::New();
             WriteRequest::TransferData(write_req, builder.GetBufferPointer(), builder.GetSize());
