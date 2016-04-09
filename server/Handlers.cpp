@@ -38,8 +38,7 @@ namespace handlers {
                 resp_builder.add_extra_content(msg::CreateStringPayload(builder, str).Union());
             }
 
-            auto resp = resp_builder.Finish();
-            builder.Finish(resp);
+            msg::FinishResponseBuffer(builder, resp_builder.Finish());
 
             auto write_req = WriteRequest::New();
             WriteRequest::TransferData(write_req, builder.GetBufferPointer(), builder.GetSize());

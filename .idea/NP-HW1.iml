@@ -11,6 +11,8 @@
       <sourceFolder url="file://$MODULE_DIR$/server/Handlers.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/client/Main.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/client/CmdHandlers.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/client/CmdHandlers.cpp" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

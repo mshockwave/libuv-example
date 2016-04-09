@@ -18,7 +18,8 @@ set(COMMON_SOURCE_FILE
 
 set(CLIENT_SOURCE_FILE
         ${COMMON_SOURCE_FILE}
-        client/Main.cpp)
+        client/Main.cpp
+        client/CmdHandlers.cpp)
 
 set(SERVER_SOURCE_FILE
         ${COMMON_SOURCE_FILE}

@@ -42,37 +42,30 @@ static void OnClientConnection(uv_stream_t *stream, int status){
 
 static void OnClientRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf){
 
-    if(nread == UV_EOF){
-        auto request = msg::GetRequest(buf->base);
-        if(request != nullptr){
-            switch(request->command()){
-                case msg::Cmd_CD:{
-                    handlers::gCDHandler(stream, nread, buf);
-                    break;
-                }
-                case fbs::hw1::Cmd_LS:{
-                    handlers::gLSHandler(stream, nread, buf);
-                    break;
-                }
-                case fbs::hw1::Cmd_PUT:break;
-                case fbs::hw1::Cmd_GET:break;
-                case fbs::hw1::Cmd_QUIT:{
-                    auto req = new uv_shutdown_t;
-                    uv_shutdown(req, stream, OnShutdown);
-                    break;
-                }
+    if(nread <= 0 && buf->base != NULL && buf->len > 0){
+        delete[] buf->base;
+        return;
+    }
+
+    auto request = msg::GetRequest(buf->base);
+    if(request != nullptr){
+        switch(request->command()){
+            case msg::Cmd_CD:{
+                handlers::gCDHandler(stream, nread, buf);
+                break;
+            }
+            case fbs::hw1::Cmd_LS:{
+                handlers::gLSHandler(stream, nread, buf);
+                break;
+            }
+            case fbs::hw1::Cmd_PUT:break;
+            case fbs::hw1::Cmd_GET:break;
+            case fbs::hw1::Cmd_QUIT:{
+                auto req = new uv_shutdown_t;
+                uv_shutdown(req, stream, OnShutdown);
+                break;
             }
         }
-    }
-
-    if(nread <= 0 && buf->base != NULL){
-        delete[] buf->base;
-    }
-
-    if(nread == 0) return;
-
-    if(nread < 0){
-        //TODO: Error
     }
 }
 

@@ -1,7 +1,5 @@
-#include <cstdlib>
 #include <cstdio>
-#include <cstring>
-#include <string>
+#include <Common.h>
 
 static const char* gMenu[] = {
         "\tcd <remote dir>:  Change Remote Download Folder",
@@ -23,7 +21,33 @@ static void print_menu(){
 
 int main(int argc, char **argv){
 
-    
+    //Socket part
+    if(argc - 1 < 2){
+        printf("Usage: %s <server address> <server port>\n", argv[0]);
+        return 1;
+    }
+
+    int socketFd;
+    struct sockaddr_in serverAddr;
+
+    socketFd = socket(AF_INET, SOCK_STREAM, 0);
+
+    int port;
+    if( (port = atoi(argv[2])) < 0 ){
+        printf("Usage: %s <server address> <server port>\n", argv[0]);
+        return 1;
+    }
+
+    bzero(&serverAddr, sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(port);
+
+    inet_pton(AF_INET, argv[1], &serverAddr.sin_addr);
+
+    if( connect(socketFd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0 ){
+        fprintf(stderr, "Error connecting to %s:%d\n", argv[1], port);
+        return 1;
+    }
 
     //Console part
     char input_buffer[200] = {'\0'};
