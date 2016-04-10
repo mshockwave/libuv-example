@@ -73,7 +73,7 @@ public:
         auto wq = reinterpret_cast<WriteRequest*>(req->data);
         return &(wq->write_buffer);
     }
-    static void TransferData(uv_write_t* req, void* data, size_t size){
+    static void TransferWqData(uv_write_t *req, void *data, size_t size){
         if(req == NULL || req->data == NULL) return;
         auto wq = reinterpret_cast<WriteRequest*>(req->data);
 
@@ -123,6 +123,14 @@ public:
         auto fs_req = GetFsRequest(req);
         if(fs_req != nullptr){
             char *buf = new char[size / sizeof(char)];
+            fs_req->write_buffer = uv_buf_init(buf, (unsigned int)(size / sizeof(char)));
+        }
+    }
+    static void TransferFsData(uv_fs_t* req, void* data, size_t size){
+        auto fs_req = GetFsRequest(req);
+        if(fs_req != nullptr){
+            char* buf = new char[size / sizeof(char)];
+            memcpy(buf, data, size);
             fs_req->write_buffer = uv_buf_init(buf, (unsigned int)(size / sizeof(char)));
         }
     }

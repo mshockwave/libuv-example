@@ -6,8 +6,13 @@ table StringPayload {
 table BinaryPayload {
     content:[byte];
 }
+table PairPayload {
+    name:string;
+    content:[byte];
+}
 
 union Payload {
     StringPayload,
-    BinaryPayload
+    BinaryPayload,
+    PairPayload
 }

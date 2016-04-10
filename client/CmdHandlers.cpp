@@ -147,5 +147,59 @@ namespace handlers{
                 fprintf(stderr, "Wrong payload format\n");
             }
         };
+
+        HandlePUT = HANDLER_FUNC() {
+            char arg[strlen(arg_) + 1];
+            strcpy(arg, arg_);
+            trim(arg);
+
+            //Check file exist
+            int fd;
+            if( (fd = open(arg, O_RDONLY)) < 0){
+                fprintf(stderr, "Opening %s error\n", arg);
+                return;
+            }
+
+            struct stat f_stat;
+            fstat(fd, &f_stat);
+            auto file_size = f_stat.st_size;
+            char file_buffer[file_size];
+            if(read(fd, (void*)file_buffer, sizeof(file_buffer)) < 0){
+                fprintf(stderr, "Reading %s error\n", arg);
+                return;
+            }
+
+            flatbuffers::FlatBufferBuilder builder;
+            auto file_bin_content = builder.CreateVector((int8_t*)file_buffer, sizeof(file_buffer));
+            auto payload = msg::CreatePairPayload(builder,
+                                                  builder.CreateString(arg), file_bin_content);
+            auto req = msg::CreateRequest(builder,
+                                          msg::Cmd_PUT,
+                                          msg::Payload_PairPayload,
+                                          payload.Union());
+            msg::FinishRequestBuffer(builder, req);
+
+            if(write(socketFd, builder.GetBufferPointer(), builder.GetSize()) < 0){
+                fprintf(stderr, "Request to server error\n");
+                return;
+            }
+
+            char recv_buffer[TRANS_BUF_SIZE];
+            if(read(socketFd, (void*)recv_buffer, sizeof(recv_buffer)) < 0){
+                fprintf(stderr, "Read response from server error\n");
+                return;
+            }
+
+            auto resp = msg::GetResponse(reinterpret_cast<const void*>(recv_buffer));
+            if(resp->status_code() == msg::Status_ERROR){
+                fprintf(stderr, "Response error:\n");
+                if(resp->extra_content_type() == msg::Payload_StringPayload){
+                    auto str_resp = CAST_2_STRING_PAYLOAD(resp->extra_content());
+                    fprintf(stderr, "%s\n", STRING_PAYLOAD_2_STR(str_resp));
+                }
+            }else{
+                fprintf(stdout, "OK\n");
+            }
+        };
     }
 }

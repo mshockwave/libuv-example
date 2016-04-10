@@ -11,15 +11,17 @@ namespace hw1 {
 
 struct StringPayload;
 struct BinaryPayload;
+struct PairPayload;
 
 enum Payload {
   Payload_NONE = 0,
   Payload_StringPayload = 1,
-  Payload_BinaryPayload = 2
+  Payload_BinaryPayload = 2,
+  Payload_PairPayload = 3
 };
 
 inline const char **EnumNamesPayload() {
-  static const char *names[] = { "NONE", "StringPayload", "BinaryPayload", nullptr };
+  static const char *names[] = { "NONE", "StringPayload", "BinaryPayload", "PairPayload", nullptr };
   return names;
 }
 
@@ -85,11 +87,47 @@ inline flatbuffers::Offset<BinaryPayload> CreateBinaryPayload(flatbuffers::FlatB
   return builder_.Finish();
 }
 
+struct PairPayload FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  const flatbuffers::String *name() const { return GetPointer<const flatbuffers::String *>(4); }
+  const flatbuffers::Vector<int8_t> *content() const { return GetPointer<const flatbuffers::Vector<int8_t> *>(6); }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, 4 /* name */) &&
+           verifier.Verify(name()) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, 6 /* content */) &&
+           verifier.Verify(content()) &&
+           verifier.EndTable();
+  }
+};
+
+struct PairPayloadBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) { fbb_.AddOffset(4, name); }
+  void add_content(flatbuffers::Offset<flatbuffers::Vector<int8_t>> content) { fbb_.AddOffset(6, content); }
+  PairPayloadBuilder(flatbuffers::FlatBufferBuilder &_fbb) : fbb_(_fbb) { start_ = fbb_.StartTable(); }
+  PairPayloadBuilder &operator=(const PairPayloadBuilder &);
+  flatbuffers::Offset<PairPayload> Finish() {
+    auto o = flatbuffers::Offset<PairPayload>(fbb_.EndTable(start_, 2));
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PairPayload> CreatePairPayload(flatbuffers::FlatBufferBuilder &_fbb,
+   flatbuffers::Offset<flatbuffers::String> name = 0,
+   flatbuffers::Offset<flatbuffers::Vector<int8_t>> content = 0) {
+  PairPayloadBuilder builder_(_fbb);
+  builder_.add_content(content);
+  builder_.add_name(name);
+  return builder_.Finish();
+}
+
 inline bool VerifyPayload(flatbuffers::Verifier &verifier, const void *union_obj, Payload type) {
   switch (type) {
     case Payload_NONE: return true;
     case Payload_StringPayload: return verifier.VerifyTable(reinterpret_cast<const StringPayload *>(union_obj));
     case Payload_BinaryPayload: return verifier.VerifyTable(reinterpret_cast<const BinaryPayload *>(union_obj));
+    case Payload_PairPayload: return verifier.VerifyTable(reinterpret_cast<const PairPayload *>(union_obj));
     default: return false;
   }
 }

@@ -58,7 +58,10 @@ static void OnClientRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf
                 handlers::LSHandler(stream, nread, buf);
                 break;
             }
-            case fbs::hw1::Cmd_PUT:break;
+            case fbs::hw1::Cmd_PUT:{
+                handlers::PUTHandler(stream, nread, buf);
+                break;
+            }
             case fbs::hw1::Cmd_GET:{
                 handlers::GETHandler(stream, nread, buf);
                 break;

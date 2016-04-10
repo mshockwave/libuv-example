@@ -75,7 +75,7 @@ int main(int argc, char **argv){
             }else if(input_str.find("ls") == 0){
                 handlers::HandleLS(socketFd, NULL);
             }else if(input_str.find("put ") == 0){
-
+                handlers::HandlePUT(socketFd, input_str.substr(4).c_str());
             }else if(input_str.find("get ") == 0){
                 handlers::HandleGET(socketFd, input_str.substr(4).c_str());
             }else if(input_str.find("exit") == 0){

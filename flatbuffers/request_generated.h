@@ -11,6 +11,7 @@ namespace fbs {
 namespace hw1 {
 struct StringPayload;
 struct BinaryPayload;
+struct PairPayload;
 }  // namespace hw1
 }  // namespace fbs
 

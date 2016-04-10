@@ -24,7 +24,7 @@ namespace handlers {
                                             bin_payload.Union());
             msg::FinishResponseBuffer(builder, resp);
 
-            FsRequest::TransferData(socket_write_req, builder.GetBufferPointer(), builder.GetSize());
+            FsRequest::TransferWqData(socket_write_req, builder.GetBufferPointer(), builder.GetSize());
             int ret = uv_write(socket_write_req, read_req->socket_stream,
                                WriteRequest::GetWriteBuffer(socket_write_req), 1,
                                Context::OnWriteFinish);
@@ -43,7 +43,7 @@ namespace handlers {
             msg::FinishResponseBuffer(builder, resp);
 
             auto write_req = WriteRequest::New();
-            WriteRequest::TransferData(write_req, builder.GetBufferPointer(), builder.GetSize());
+            WriteRequest::TransferWqData(write_req, builder.GetBufferPointer(), builder.GetSize());
 
             int ret = uv_write(write_req, FsRequest::GetFsRequest(req)->socket_stream,
                                WriteRequest::GetWriteBuffer(write_req), 1,
@@ -51,16 +51,16 @@ namespace handlers {
             if(ret != 0){
                 fprintf(stderr, "Error writing response in OnReadFile handler\n");
             }
-        }else{
-            //Close
-            uv_fs_t close_req;
-            //Since we want blocking close
-            //close_req doesn't need to be preserved through heap
-            uv_fs_close(req->loop,
-                        &close_req,
-                        (uv_file)FsRequest::GetFsRequest(req)->open_fd,
-                        NULL /*sync*/);
         }
+
+        //Close
+        uv_fs_t close_req;
+        //Since we want blocking close
+        //close_req doesn't need to be preserved through heap
+        uv_fs_close(req->loop,
+                    &close_req,
+                    (uv_file)FsRequest::GetFsRequest(req)->open_fd,
+                    NULL /*sync*/);
 
         uv_fs_req_cleanup(req);
         FsRequest::Destroy(req);
@@ -91,13 +91,84 @@ namespace handlers {
             msg::FinishResponseBuffer(builder, resp);
 
             auto write_req = WriteRequest::New();
-            WriteRequest::TransferData(write_req, builder.GetBufferPointer(), builder.GetSize());
+            WriteRequest::TransferWqData(write_req, builder.GetBufferPointer(), builder.GetSize());
 
             int ret = uv_write(write_req, FsRequest::GetFsRequest(open_req)->socket_stream,
                                WriteRequest::GetWriteBuffer(write_req), 1,
                                Context::OnWriteFinish);
             if(ret != 0){
                 fprintf(stderr, "Error writing response in OnReadFileOpen handler\n");
+            }
+        }
+
+        uv_fs_req_cleanup(open_req);
+        FsRequest::Destroy(open_req);
+    }
+    void OnFileWrite(uv_fs_t* req){
+        flatbuffers::FlatBufferBuilder builder;
+        flatbuffers::Offset<msg::Response> resp;
+
+        if(req->result < 0){
+            auto str = builder.CreateString("Read File Error");
+            resp = msg::CreateResponse(builder,
+                                            msg::Status_ERROR,
+                                            msg::Payload_StringPayload,
+                                            msg::CreateStringPayload(builder, str).Union());
+            msg::FinishResponseBuffer(builder, resp);
+        }else{
+            resp = msg::CreateResponse(builder, msg::Status_OK);
+            msg::FinishResponseBuffer(builder, resp);
+        }
+
+        //Close File
+        uv_fs_t close_req;
+        //Since we want blocking close
+        //close_req doesn't need to be preserved through heap
+        uv_fs_close(req->loop,
+                    &close_req,
+                    (uv_file)FsRequest::GetFsRequest(req)->open_fd,
+                    NULL /*sync*/);
+
+        //Write Socket Response
+        auto write_req = WriteRequest::New();
+        WriteRequest::TransferWqData(write_req, builder.GetBufferPointer(), builder.GetSize());
+
+        int ret = uv_write(write_req, FsRequest::GetFsRequest(req)->socket_stream,
+                           WriteRequest::GetWriteBuffer(write_req), 1,
+                           Context::OnWriteFinish);
+        if(ret != 0){
+            fprintf(stderr, "Error writing response in OnWriteFile handler\n");
+        }
+
+        uv_fs_req_cleanup(req);
+        FsRequest::Destroy(req);
+    }
+    void OnWriteFileOpen(uv_fs_t *open_req){
+        if(open_req->result >= 0){
+            auto write_req = FsRequest::New(FsRequest::GetFsRequest(open_req)->socket_stream);
+            FsRequest::GetFsRequest(write_req)->open_fd = open_req->result;
+
+            uv_fs_write(open_req->loop, write_req,
+                       (uv_file)open_req->result,
+                       FsRequest::GetWriteBuffer(open_req), 1, 0, OnFileWrite);
+        }else{
+            flatbuffers::FlatBufferBuilder builder;
+
+            auto str = builder.CreateString("Open File Error");
+            auto resp = msg::CreateResponse(builder,
+                                            msg::Status_ERROR,
+                                            msg::Payload_StringPayload,
+                                            msg::CreateStringPayload(builder, str).Union());
+            msg::FinishResponseBuffer(builder, resp);
+
+            auto write_req = WriteRequest::New();
+            WriteRequest::TransferWqData(write_req, builder.GetBufferPointer(), builder.GetSize());
+
+            int ret = uv_write(write_req, FsRequest::GetFsRequest(open_req)->socket_stream,
+                               WriteRequest::GetWriteBuffer(write_req), 1,
+                               Context::OnWriteFinish);
+            if(ret != 0){
+                fprintf(stderr, "Error writing response in OnWriteFileOpen handler\n");
             }
         }
 
@@ -140,7 +211,7 @@ namespace handlers {
             msg::FinishResponseBuffer(builder, resp);
 
             auto write_req = WriteRequest::New();
-            WriteRequest::TransferData(write_req, builder.GetBufferPointer(), builder.GetSize());
+            WriteRequest::TransferWqData(write_req, builder.GetBufferPointer(), builder.GetSize());
 
             int ret = uv_write(write_req, stream,
                                WriteRequest::GetWriteBuffer(write_req), 1,
@@ -182,7 +253,7 @@ namespace handlers {
             msg::FinishResponseBuffer(builder, resp);
 
             auto write_req = WriteRequest::New();
-            WriteRequest::TransferData(write_req, builder.GetBufferPointer(), builder.GetSize());
+            WriteRequest::TransferWqData(write_req, builder.GetBufferPointer(), builder.GetSize());
 
             int ret = uv_write(write_req, stream,
                                WriteRequest::GetWriteBuffer(write_req), 1,
@@ -218,13 +289,57 @@ namespace handlers {
                 msg::FinishResponseBuffer(builder, resp);
 
                 auto write_req = WriteRequest::New();
-                WriteRequest::TransferData(write_req, builder.GetBufferPointer(), builder.GetSize());
+                WriteRequest::TransferWqData(write_req, builder.GetBufferPointer(), builder.GetSize());
 
                 int ret = uv_write(write_req, stream,
                                    WriteRequest::GetWriteBuffer(write_req), 1,
                                    Context::OnWriteFinish);
                 if(ret != 0){
                     fprintf(stderr, "Error writing response in GET handler\n");
+                }
+            }
+        };
+
+        PUTHandler = HANDLER_FUNC(){
+            auto request = msg::GetRequest(buf->base);
+            auto ctx = Context::GetContext(stream);
+
+            if(request->payload_type() == msg::Payload_PairPayload){
+                auto pair_payload = static_cast<const msg::PairPayload*>(request->payload());
+                auto file_name = pair_payload->name()->data();
+                auto file_data = pair_payload->content()->data();
+                auto file_size = pair_payload->content()->size();
+
+                std::string full_file_path(ctx->get_current_dir());
+                full_file_path += "/";
+                full_file_path += file_name;
+
+                auto open_req = FsRequest::New(stream);
+                FsRequest::TransferFsData(open_req, (void*)file_data, file_size);
+
+                uv_fs_open(stream->loop,
+                           open_req, full_file_path.c_str(),
+                           O_CREAT | O_RDWR,
+                           S_IRWXU | S_IRWXG | S_IRWXO, OnWriteFileOpen);
+            }else{
+                //Payload Format Error
+                flatbuffers::FlatBufferBuilder builder;
+
+                auto str = builder.CreateString("Invalid payload format");
+                auto resp = msg::CreateResponse(builder,
+                                                msg::Status_ERROR,
+                                                msg::Payload_StringPayload,
+                                                msg::CreateStringPayload(builder, str).Union());
+                msg::FinishResponseBuffer(builder, resp);
+
+                auto write_req = WriteRequest::New();
+                WriteRequest::TransferWqData(write_req, builder.GetBufferPointer(), builder.GetSize());
+
+                int ret = uv_write(write_req, stream,
+                                   WriteRequest::GetWriteBuffer(write_req), 1,
+                                   Context::OnWriteFinish);
+                if(ret != 0){
+                    fprintf(stderr, "Error writing response in PUT handler\n");
                 }
             }
         };
