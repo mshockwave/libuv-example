@@ -12,6 +12,8 @@ extern "C"{
 namespace handlers{
     typedef std::function<void(int,const char*)> cmd_handler_t;
 
+#define DOWNLOAD_DIR "Download"
+
 #define DECL_EXT_CMD_HANDLER(H) \
     extern cmd_handler_t H ;
 

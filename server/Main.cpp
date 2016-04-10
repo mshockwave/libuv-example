@@ -59,7 +59,10 @@ static void OnClientRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf
                 break;
             }
             case fbs::hw1::Cmd_PUT:break;
-            case fbs::hw1::Cmd_GET:break;
+            case fbs::hw1::Cmd_GET:{
+                handlers::GETHandler(stream, nread, buf);
+                break;
+            }
             case fbs::hw1::Cmd_QUIT:{
                 auto req = new uv_shutdown_t;
                 uv_shutdown(req, stream, OnShutdown);

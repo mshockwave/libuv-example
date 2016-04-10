@@ -17,7 +17,7 @@ extern "C"{
 #include "flatbuffers/request_generated.h"
 #include "flatbuffers/response_generated.h"
 
-#define TRANS_BUF_SIZE 2048
+#define TRANS_BUF_SIZE 2048 * 1024
 
 typedef struct sockaddr socket_addr_t;
 
@@ -29,11 +29,20 @@ typedef struct sockaddr socket_addr_t;
 extern int get_port(socket_addr_t *sa);
 extern std::string get_address(socket_addr_t *sa);
 
+//flatbuffers related
+namespace msg = fbs::hw1;
+
+#define CAST_2_STRING_PAYLOAD(P) \
+    static_cast<const msg::StringPayload*>(P)
+
+#define STRING_PAYLOAD_2_STR(P) \
+    (P)->content()->data()
+
 extern void BufferAllocator(uv_handle_t*, size_t, uv_buf_t*);
 
 struct WriteRequest {
 
-private:
+protected:
     WriteRequest(){
         //Initialize
         write_buffer.base = NULL;
@@ -80,13 +89,47 @@ public:
     }
 };
 
-//flatbuffers related
-namespace msg = fbs::hw1;
+struct FsRequest : public WriteRequest {
+private:
+    FsRequest(uv_stream_t* stream) :
+            WriteRequest(),
+            socket_stream(stream),
+            open_fd(0){}
 
-#define CAST_2_STRING_PAYLOAD(P) \
-    static_cast<const msg::StringPayload*>(P)
+public:
+    uv_stream_t *socket_stream;
+    ssize_t open_fd;
 
-#define STRING_PAYLOAD_2_STR(P) \
-    (P)->content()->data()
+    static uv_fs_t* New(uv_stream_t* stream){
+        auto req = new uv_fs_t;
+        req->data = new FsRequest(stream);
+        return req;
+    }
+    static void Destroy(uv_fs_t* req){
+        FsRequest* fs_req;
+        if(req && (fs_req = reinterpret_cast<FsRequest*>(req->data))){
+            delete fs_req;
+            delete req;
+        }
+    }
+    static FsRequest* GetFsRequest(uv_fs_t* req){
+        if(req){
+            return reinterpret_cast<FsRequest*>(req->data);
+        }else{
+            return nullptr;
+        }
+    }
+    static void AllocateBuffer(uv_fs_t* req, size_t size){
+        auto fs_req = GetFsRequest(req);
+        if(fs_req != nullptr){
+            char *buf = new char[size / sizeof(char)];
+            fs_req->write_buffer = uv_buf_init(buf, (unsigned int)(size / sizeof(char)));
+        }
+    }
+    static uv_buf_t* GetWriteBuffer(uv_fs_t* req){
+        auto fs_req = GetFsRequest(req);
+        return (fs_req == nullptr)? nullptr : &(fs_req->write_buffer);
+    }
+};
 
 #endif //NP_HW1_UTILS_H

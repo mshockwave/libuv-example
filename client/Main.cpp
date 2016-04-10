@@ -54,6 +54,17 @@ int main(int argc, char **argv){
 
     handlers::InitCmdHandlers();
 
+    //Check download dir
+    DIR *dp;
+    if( (dp = opendir(DOWNLOAD_DIR)) == NULL ){
+        //Not exist
+        if(mkdir(DOWNLOAD_DIR, S_IRWXU | S_IRWXG | S_IRWXO) < 0){
+            fprintf(stderr, "Fail creating folder: %s\n", DOWNLOAD_DIR);
+        }
+    }else{
+        closedir(dp);
+    }
+
     //Console part
     std::string input_str;
     do{
@@ -66,7 +77,7 @@ int main(int argc, char **argv){
             }else if(input_str.find("put ") == 0){
 
             }else if(input_str.find("get ") == 0){
-
+                handlers::HandleGET(socketFd, input_str.substr(4).c_str());
             }else if(input_str.find("exit") == 0){
                 flatbuffers::FlatBufferBuilder builder;
 

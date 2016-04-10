@@ -6,6 +6,8 @@
 
 extern "C" {
 #include <unistd.h>
+#include <sys/stat.h>
+#include <dirent.h>
 #include <uv/uv.h>
 };
 
@@ -23,11 +25,25 @@ public:
     Context(const char* client_address_, int port) :
             pwd("Upload"),
             client_address(client_address_),
-            client_port(port) {}
+            client_port(port) {
+        //Check default upload folder
+        auto pwd_str = pwd.c_str();
+        DIR *dp;
+        if( (dp = opendir(pwd_str)) == NULL ){
+            //Not exist
+            if(mkdir(pwd_str, S_IRWXU | S_IRWXG | S_IRWXO) < 0){
+                fprintf(stderr, "Fail creating folder: %s\n", pwd_str);
+            }
+        }else{
+            closedir(dp);
+        }
+    }
 
     bool set_current_dir(const char* path){
-        if(!access(path, F_OK) && !access(path, X_OK) && !access(path, R_OK)){
+        DIR *dp;
+        if( (dp = opendir(path)) != NULL ){
             pwd = path;
+            closedir(dp);
             return true;
         }else{
             return false;
@@ -37,7 +53,7 @@ public:
 
     static void OnWriteFinish(uv_write_t *req, int status){
         if(status < 0){
-            fprintf(stderr, "Error raised in OnWriteFinish: %d\n", status);
+            fprintf(stderr, "Error raised in OnWriteFinish: %s\n", uv_strerror(status));
         }
 
         WriteRequest::Destroy(req);
