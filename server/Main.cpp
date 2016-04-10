@@ -28,7 +28,7 @@ static void OnClientConnection(uv_stream_t *stream, int status){
         uv_tcp_t* client = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
         uv_tcp_init(stream->loop, client);
 
-        client->data = new Context();
+        client->data = new Context(address.c_str(), port);
 
         if(uv_accept(stream, reinterpret_cast<uv_stream_t*>(client)) >= 0){
             //Success
@@ -51,11 +51,11 @@ static void OnClientRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf
     if(request != nullptr){
         switch(request->command()){
             case msg::Cmd_CD:{
-                handlers::gCDHandler(stream, nread, buf);
+                handlers::CDHandler(stream, nread, buf);
                 break;
             }
             case fbs::hw1::Cmd_LS:{
-                handlers::gLSHandler(stream, nread, buf);
+                handlers::LSHandler(stream, nread, buf);
                 break;
             }
             case fbs::hw1::Cmd_PUT:break;
@@ -72,7 +72,10 @@ static void OnClientRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf
 static void OnShutdown(uv_shutdown_t* req, int status){
     auto stream = req->handle;
     auto ctx = Context::GetContext(stream);
-    if(ctx != nullptr) delete ctx;
+    if(ctx != nullptr){
+        fprintf(stdout, "Client disconnect: %s:%d\n", ctx->client_address.c_str(), ctx->client_port);
+        delete ctx;
+    }
 
     delete req;
 

@@ -17,7 +17,13 @@ private:
     std::string pwd;
 
 public:
-    Context() : pwd("Upload") {}
+    std::string client_address;
+    int client_port;
+
+    Context(const char* client_address_, int port) :
+            pwd("Upload"),
+            client_address(client_address_),
+            client_port(port) {}
 
     bool set_current_dir(const char* path){
         if(!access(path, F_OK) && !access(path, X_OK) && !access(path, R_OK)){
@@ -27,6 +33,7 @@ public:
             return false;
         }
     }
+    const char* get_current_dir(){ return pwd.c_str(); }
 
     static void OnWriteFinish(uv_write_t *req, int status){
         if(status < 0){

@@ -25,10 +25,10 @@ namespace handlers {
 
     extern void InitHandlers();
 
-    DECL_EXT_HANDLER(gLSHandler)
-    DECL_EXT_HANDLER(gCDHandler)
-    DECL_EXT_HANDLER(gGETHandler)
-    DECL_EXT_HANDLER(gPUTHandler)
+    DECL_EXT_HANDLER(LSHandler)
+    DECL_EXT_HANDLER(CDHandler)
+    DECL_EXT_HANDLER(GETHandler)
+    DECL_EXT_HANDLER(PUTHandler)
 }
 
 #endif //NP_HW1_HANDLERS_H
