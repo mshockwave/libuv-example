@@ -180,8 +180,6 @@ namespace handlers{
                 return;
             }
 
-            puts("After Open");
-
             struct stat f_stat;
             fstat(fd, &f_stat);
             auto file_size = f_stat.st_size;
