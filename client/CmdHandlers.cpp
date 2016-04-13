@@ -113,10 +113,25 @@ namespace handlers{
                 return;
             }
 
-            char recv_buffer[TRANS_BUF_SIZE];
-            if(read(socketFd, (void*)recv_buffer, sizeof(recv_buffer)) < 0){
-                fprintf(stderr, "Read response from server error\n");
-                return;
+            char tmp_recv_buffer[RECV_BUF_SIZE];
+            char *recv_buffer = NULL;
+            size_t recv_buffer_size = 0;
+            ssize_t ret;
+            while( (ret = read(socketFd, (void*)tmp_recv_buffer, sizeof(char) * RECV_BUF_SIZE)) != 0 ){
+                if(ret < 0){
+                    fprintf(stderr, "Read response from server error\n");
+                    perror("Read socket");
+                    return;
+                }
+
+                //Save content
+                recv_buffer = (char*)realloc(recv_buffer, recv_buffer_size + (size_t)ret);
+                memcpy(recv_buffer + recv_buffer_size, tmp_recv_buffer, (size_t)ret);
+                recv_buffer_size += (size_t)ret;
+
+                //Verify and break
+                flatbuffers::Verifier verifier((const uint8_t*)recv_buffer, recv_buffer_size);
+                if(msg::VerifyResponseBuffer(verifier)) break;
             }
 
             auto resp = msg::GetResponse(reinterpret_cast<const void*>(recv_buffer));
@@ -138,6 +153,7 @@ namespace handlers{
                               S_IRWXU | S_IRWXG | S_IRWXO);
                 if(fd < 0){
                     fprintf(stderr, "Error opening %s\n", file_path.c_str());
+                    if(recv_buffer != NULL) free(recv_buffer);
                     return;
                 }
                 if(write(fd, bin_content->data(), bin_content->size()) < 0){
@@ -147,6 +163,8 @@ namespace handlers{
             }else{
                 fprintf(stderr, "Wrong payload format\n");
             }
+
+            if(recv_buffer != NULL) free(recv_buffer);
         };
 
         HandlePUT = HANDLER_FUNC() {
