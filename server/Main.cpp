@@ -72,19 +72,19 @@ static void OnClientRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf
     if(request != nullptr){
         switch(request->command()){
             case msg::Cmd_CD:{
-                handlers::CDHandler(stream, read_buffer.len, (const uv_buf_t*)&ctx->read_buffer);
+                handlers::CDHandler(stream, read_buffer.len, (const uv_buf_t*)&(ctx->read_buffer));
                 break;
             }
             case fbs::hw1::Cmd_LS:{
-                handlers::LSHandler(stream, read_buffer.len, (const uv_buf_t*)&ctx->read_buffer);
+                handlers::LSHandler(stream, read_buffer.len, (const uv_buf_t*)&(ctx->read_buffer));
                 break;
             }
             case fbs::hw1::Cmd_PUT:{
-                handlers::PUTHandler(stream, read_buffer.len, (const uv_buf_t*)&ctx->read_buffer);
+                handlers::PUTHandler(stream, read_buffer.len, (const uv_buf_t*)&(ctx->read_buffer));
                 break;
             }
             case fbs::hw1::Cmd_GET:{
-                handlers::GETHandler(stream, read_buffer.len, (const uv_buf_t*)&ctx->read_buffer);
+                handlers::GETHandler(stream, read_buffer.len, (const uv_buf_t*)&(ctx->read_buffer));
                 break;
             }
             case fbs::hw1::Cmd_QUIT:{

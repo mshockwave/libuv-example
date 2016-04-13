@@ -160,6 +160,7 @@ namespace handlers{
                     fprintf(stderr, "Error writing to %s\n", file_path.c_str());
                     perror("Write file:");
                 }
+                close(fd);
             }else{
                 fprintf(stderr, "Wrong payload format\n");
             }
@@ -179,14 +180,18 @@ namespace handlers{
                 return;
             }
 
+            puts("After Open");
+
             struct stat f_stat;
             fstat(fd, &f_stat);
             auto file_size = f_stat.st_size;
             char *file_buffer = new char[file_size];
             if(read(fd, (void*)file_buffer, (size_t)file_size) < 0){
                 fprintf(stderr, "Reading %s error\n", arg);
+                close(fd);
                 return;
             }
+            close(fd);
 
             flatbuffers::FlatBufferBuilder builder;
             auto file_bin_content = builder.CreateVector((int8_t*)file_buffer, (size_t)file_size);
@@ -200,6 +205,8 @@ namespace handlers{
 
             if(write(socketFd, builder.GetBufferPointer(), builder.GetSize()) < 0){
                 fprintf(stderr, "Request to server error\n");
+                delete[] file_buffer;
+                close(fd);
                 return;
             }
             delete[] file_buffer;
