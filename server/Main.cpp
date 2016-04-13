@@ -42,28 +42,49 @@ static void OnClientConnection(uv_stream_t *stream, int status){
 
 static void OnClientRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf){
 
-    if(nread <= 0 && buf->base != NULL && buf->len > 0){
-        delete[] buf->base;
+    if(nread == 0) return; //BLOCK
+
+    if(nread < 0 ){
+        //Error
+        if(buf->base != nullptr && buf->len > 0){
+            delete[] buf->base;
+        }
         return;
     }
 
-    auto request = msg::GetRequest(buf->base);
+    //nread > 0
+    Context* ctx = Context::GetContext(stream);
+    uv_buf_t& read_buffer = ctx->read_buffer;
+    read_buffer.base = (char*)realloc(read_buffer.base, read_buffer.len + nread);
+
+    //Save all the data
+    memcpy(read_buffer.base + read_buffer.len, buf->base, (size_t)nread);
+    read_buffer.len = read_buffer.len + buf->len;
+
+    //Release buf
+    delete[] buf->base;
+
+    flatbuffers::Verifier verifier((const uint8_t*)read_buffer.base, read_buffer.len);
+    if(!msg::VerifyRequestBuffer(verifier)) return;
+
+    //Pass verify
+    auto request = msg::GetRequest(read_buffer.base);
     if(request != nullptr){
         switch(request->command()){
             case msg::Cmd_CD:{
-                handlers::CDHandler(stream, nread, buf);
+                handlers::CDHandler(stream, read_buffer.len, (const uv_buf_t*)&ctx->read_buffer);
                 break;
             }
             case fbs::hw1::Cmd_LS:{
-                handlers::LSHandler(stream, nread, buf);
+                handlers::LSHandler(stream, read_buffer.len, (const uv_buf_t*)&ctx->read_buffer);
                 break;
             }
             case fbs::hw1::Cmd_PUT:{
-                handlers::PUTHandler(stream, nread, buf);
+                handlers::PUTHandler(stream, read_buffer.len, (const uv_buf_t*)&ctx->read_buffer);
                 break;
             }
             case fbs::hw1::Cmd_GET:{
-                handlers::GETHandler(stream, nread, buf);
+                handlers::GETHandler(stream, read_buffer.len, (const uv_buf_t*)&ctx->read_buffer);
                 break;
             }
             case fbs::hw1::Cmd_QUIT:{
@@ -73,6 +94,11 @@ static void OnClientRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf
             }
         }
     }
+
+    //Release buffers
+    free(read_buffer.base);
+    read_buffer.base = NULL;
+    read_buffer.len = 0;
 }
 
 static void OnShutdown(uv_shutdown_t* req, int status){

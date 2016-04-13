@@ -142,6 +142,7 @@ namespace handlers{
                 }
                 if(write(fd, bin_content->data(), bin_content->size()) < 0){
                     fprintf(stderr, "Error writing to %s\n", file_path.c_str());
+                    perror("Write file:");
                 }
             }else{
                 fprintf(stderr, "Wrong payload format\n");
@@ -163,14 +164,14 @@ namespace handlers{
             struct stat f_stat;
             fstat(fd, &f_stat);
             auto file_size = f_stat.st_size;
-            char file_buffer[file_size];
-            if(read(fd, (void*)file_buffer, sizeof(file_buffer)) < 0){
+            char *file_buffer = new char[file_size];
+            if(read(fd, (void*)file_buffer, (size_t)file_size) < 0){
                 fprintf(stderr, "Reading %s error\n", arg);
                 return;
             }
 
             flatbuffers::FlatBufferBuilder builder;
-            auto file_bin_content = builder.CreateVector((int8_t*)file_buffer, sizeof(file_buffer));
+            auto file_bin_content = builder.CreateVector((int8_t*)file_buffer, (size_t)file_size);
             auto payload = msg::CreatePairPayload(builder,
                                                   builder.CreateString(arg), file_bin_content);
             auto req = msg::CreateRequest(builder,
@@ -183,8 +184,9 @@ namespace handlers{
                 fprintf(stderr, "Request to server error\n");
                 return;
             }
+            delete[] file_buffer;
 
-            char recv_buffer[TRANS_BUF_SIZE];
+            char recv_buffer[TRANS_BUF_SIZE]; //Only small amount of data, use static buffer
             if(read(socketFd, (void*)recv_buffer, sizeof(recv_buffer)) < 0){
                 fprintf(stderr, "Read response from server error\n");
                 return;

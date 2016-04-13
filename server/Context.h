@@ -22,10 +22,12 @@ public:
     std::string client_address;
     int client_port;
 
+    uv_buf_t read_buffer;
+
     Context(const char* client_address_, int port) :
             pwd("Upload"),
             client_address(client_address_),
-            client_port(port) {
+            client_port(port){
         //Check default upload folder
         auto pwd_str = pwd.c_str();
         DIR *dp;
@@ -37,6 +39,10 @@ public:
         }else{
             closedir(dp);
         }
+
+        //Init buffer
+        read_buffer.base = NULL;
+        read_buffer.len = 0;
     }
 
     bool set_current_dir(const char* path){
