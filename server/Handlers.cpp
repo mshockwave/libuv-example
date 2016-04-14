@@ -69,49 +69,12 @@ namespace handlers {
             ResponseError(read_req->socket_stream, "Read File Error");
         }
     }
-    void OnReadFileOpen(uv_fs_t *open_req){
-        if(open_req->result >= 0){
-            auto read_req = FsRequest::New(FsRequest::GetFsRequest(open_req)->socket_stream);
-            FsRequest::GetFsRequest(read_req)->open_fd = open_req->result;
 
-            //Get file size
-            uv_fs_t size_req;
-            uv_fs_fstat(open_req->loop, &size_req, (uv_file)open_req->result, NULL);
-            auto file_size = size_req.statbuf.st_size;
-            FsRequest::AllocateBuffer(read_req, file_size);
-            uv_fs_req_cleanup(&size_req);
-
-            uv_fs_read(open_req->loop, read_req,
-                       (uv_file)open_req->result,
-                       FsRequest::GetWriteBuffer(read_req), 1, 0, OnFileRead);
-        }else{
-            flatbuffers::FlatBufferBuilder builder;
-
-            auto str = builder.CreateString("Open File Error");
-            auto resp = msg::CreateResponse(builder,
-                                            msg::Status_ERROR,
-                                            msg::Payload_StringPayload,
-                                            msg::CreateStringPayload(builder, str).Union());
-            msg::FinishResponseBuffer(builder, resp);
-
-            auto write_req = WriteRequest::New();
-            WriteRequest::TransferWqData(write_req, builder.GetBufferPointer(), builder.GetSize());
-
-            int ret = uv_write(write_req, FsRequest::GetFsRequest(open_req)->socket_stream,
-                               WriteRequest::GetWriteBuffer(write_req), 1,
-                               Context::OnWriteFinish);
-            if(ret != 0){
-                fprintf(stderr, "Error writing response in OnReadFileOpen handler\n");
-            }
-        }
-
-        uv_fs_req_cleanup(open_req);
-        FsRequest::Destroy(open_req);
-    }
-    /* FIXME
     void OnFileWrite(uv_fs_t* req){
         uv_stream_t* stream = FsRequest::GetFsRequest(req)->socket_stream;
+        auto ctx = Context::GetContext(stream);
         if(req->result > 0){
+            ctx->pending_fd_offset += (size_t)(req->result);
             ResponseOk(stream);
         }else{
             ResponseError(stream, "Write file Error");
@@ -120,7 +83,6 @@ namespace handlers {
         uv_fs_req_cleanup(req);
         FsRequest::Destroy(req);
     }
-     */
 
     void InitHandlers(){
         LSHandler = HANDLER_FUNC(){
@@ -267,6 +229,7 @@ namespace handlers {
                             NULL /*sync*/);
                 uv_fs_req_cleanup(&close_req);
                 ctx->pending_fd = -1; //Clear
+                ctx->pending_fd_offset = 0;
 
                 ResponseOk(stream);
 
@@ -294,16 +257,12 @@ namespace handlers {
                     ctx->pending_fd = fd;
                 }
 
-                /*FIXME
                 auto write_req = FsRequest::New(stream);
                 FsRequest::TransferFsData(write_req, (void*)file_data, file_size);
                 FsRequest::GetFsRequest(write_req)->socket_stream = stream;
                 uv_fs_write(stream->loop, write_req, (uv_file)fd,
-                            FsRequest::GetWriteBuffer(write_req), 1, 0, OnFileWrite);
-                            */
-                write((int)fd, (void*)file_data, file_size);
-
-                ResponseOk(stream);
+                            FsRequest::GetWriteBuffer(write_req), 1,
+                            (int64_t)ctx->pending_fd_offset, OnFileWrite);
             }else{
                 //Payload Format Error
                 ResponseError(stream, "Invalid Payload Format");
