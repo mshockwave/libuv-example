@@ -12,6 +12,7 @@ namespace hw1 {
 struct StringPayload;
 struct BinaryPayload;
 struct PairPayload;
+struct EofPayload;
 }  // namespace hw1
 }  // namespace fbs
 

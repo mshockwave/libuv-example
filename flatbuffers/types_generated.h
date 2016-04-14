@@ -12,16 +12,18 @@ namespace hw1 {
 struct StringPayload;
 struct BinaryPayload;
 struct PairPayload;
+struct EofPayload;
 
 enum Payload {
   Payload_NONE = 0,
   Payload_StringPayload = 1,
   Payload_BinaryPayload = 2,
-  Payload_PairPayload = 3
+  Payload_PairPayload = 3,
+  Payload_EofPayload = 4
 };
 
 inline const char **EnumNamesPayload() {
-  static const char *names[] = { "NONE", "StringPayload", "BinaryPayload", "PairPayload", nullptr };
+  static const char *names[] = { "NONE", "StringPayload", "BinaryPayload", "PairPayload", "EofPayload", nullptr };
   return names;
 }
 
@@ -122,12 +124,41 @@ inline flatbuffers::Offset<PairPayload> CreatePairPayload(flatbuffers::FlatBuffe
   return builder_.Finish();
 }
 
+struct EofPayload FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  uint8_t isEof() const { return GetField<uint8_t>(4, 0); }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint8_t>(verifier, 4 /* isEof */) &&
+           verifier.EndTable();
+  }
+};
+
+struct EofPayloadBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_isEof(uint8_t isEof) { fbb_.AddElement<uint8_t>(4, isEof, 0); }
+  EofPayloadBuilder(flatbuffers::FlatBufferBuilder &_fbb) : fbb_(_fbb) { start_ = fbb_.StartTable(); }
+  EofPayloadBuilder &operator=(const EofPayloadBuilder &);
+  flatbuffers::Offset<EofPayload> Finish() {
+    auto o = flatbuffers::Offset<EofPayload>(fbb_.EndTable(start_, 1));
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<EofPayload> CreateEofPayload(flatbuffers::FlatBufferBuilder &_fbb,
+   uint8_t isEof = 0) {
+  EofPayloadBuilder builder_(_fbb);
+  builder_.add_isEof(isEof);
+  return builder_.Finish();
+}
+
 inline bool VerifyPayload(flatbuffers::Verifier &verifier, const void *union_obj, Payload type) {
   switch (type) {
     case Payload_NONE: return true;
     case Payload_StringPayload: return verifier.VerifyTable(reinterpret_cast<const StringPayload *>(union_obj));
     case Payload_BinaryPayload: return verifier.VerifyTable(reinterpret_cast<const BinaryPayload *>(union_obj));
     case Payload_PairPayload: return verifier.VerifyTable(reinterpret_cast<const PairPayload *>(union_obj));
+    case Payload_EofPayload: return verifier.VerifyTable(reinterpret_cast<const EofPayload *>(union_obj));
     default: return false;
   }
 }

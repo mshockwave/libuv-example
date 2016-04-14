@@ -17,8 +17,8 @@ extern "C"{
 #include "flatbuffers/request_generated.h"
 #include "flatbuffers/response_generated.h"
 
-#define TRANS_BUF_SIZE 2048 * 1024
-#define RECV_BUF_SIZE 2 * 1024 * 1024 //2M
+#define FILE_CHUNK_SIZE 2048
+#define RECV_BUF_SIZE 3 * 1024 //3K
 
 typedef struct sockaddr socket_addr_t;
 

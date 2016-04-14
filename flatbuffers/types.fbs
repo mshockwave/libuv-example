@@ -10,9 +10,13 @@ table PairPayload {
     name:string;
     content:[byte];
 }
+table EofPayload {
+    isEof:bool;
+}
 
 union Payload {
     StringPayload,
     BinaryPayload,
-    PairPayload
+    PairPayload,
+    EofPayload
 }
