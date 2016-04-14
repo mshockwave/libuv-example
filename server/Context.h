@@ -25,12 +25,14 @@ public:
     uv_buf_t read_buffer;
 
     ssize_t pending_fd;
+    size_t pending_fd_offset;
 
     Context(const char* client_address_, int port) :
             pwd("Upload"),
             client_address(client_address_),
             client_port(port),
-            pending_fd(-1){
+            pending_fd(-1),
+            pending_fd_offset(0){
         //Check default upload folder
         auto pwd_str = pwd.c_str();
         DIR *dp;

@@ -11,12 +11,15 @@ namespace handlers {
     void OnFileRead(uv_fs_t* req){
         auto read_req = FsRequest::GetFsRequest(req);
         auto socket_write_req = WriteRequest::New();
+        auto ctx = Context::GetContext(read_req->socket_stream);
         if(req->result > 0){
             auto result_buf = read_req->write_buffer;
 
+            ctx->pending_fd_offset += (size_t)(req->result);
+
             flatbuffers::FlatBufferBuilder builder;
 
-            auto buf_vector = builder.CreateVector((int8_t*)result_buf.base, result_buf.len);
+            auto buf_vector = builder.CreateVector((int8_t*)result_buf.base, (size_t)req->result);
             auto bin_payload = msg::CreateBinaryPayload(builder, buf_vector);
             auto resp = msg::CreateResponse(builder,
                                             msg::Status_OK,
@@ -48,8 +51,8 @@ namespace handlers {
                 fprintf(stderr, "Error writing response in OnFileRead\n");
             }
 
-            auto ctx = Context::GetContext(read_req->socket_stream);
             ctx->pending_fd = -1;
+            ctx->pending_fd_offset = 0;
 
             //Close
             uv_fs_t close_req;
@@ -237,7 +240,8 @@ namespace handlers {
 
                 uv_fs_read(stream->loop, read_req,
                            (uv_file)fd,
-                           FsRequest::GetWriteBuffer(read_req), 1, 0, OnFileRead);
+                           FsRequest::GetWriteBuffer(read_req), 1,
+                           (int64_t)ctx->pending_fd_offset, OnFileRead);
             }else{
                 //Payload Format Error
                 ResponseError(stream, "Invalid Payload Format");

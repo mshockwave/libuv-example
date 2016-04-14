@@ -43,13 +43,13 @@ static void OnClientConnection(uv_stream_t *stream, int status){
 static void OnClientRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf){
 
     if(nread == 0){
-        puts("Nread == 0");
+        //puts("Nread == 0");
         return;
     } //BLOCK
 
     if(nread < 0 ){
         //Error
-        puts("Error reading from client socket");
+        if(nread != UV_EOF) fprintf(stderr, "Error reading client socket\n");
         if(buf->base != nullptr && buf->len > 0){
             delete[] buf->base;
         }
